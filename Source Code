@@ -1,0 +1,139 @@
+import tweepy import requests from langdetect import detect import logging import sqlite3 from datetime import datetime import os import random import schedule import time import threading from PIL import Image, ImageDraw, ImageFont import telegram import feedparser import openai
+
+logging.basicConfig(filename='twitter_bot.log', level=logging.ERROR, format='%(asctime)s %(levelname)s:%(message)s')
+
+class Notifier: def init(self, token, chat_id): self.bot = telegram.Bot(token=token) self.chat_id = chat_id
+
+def send_message(self, message):
+    try:
+        self.bot.send_message(chat_id=self.chat_id, text=message)
+    except Exception as e:
+        print(f"Telegram bildirimi gönderilemedi: {e}")
+
+def create_text_image(text, file_path): width, height = 800, 400 background_color = (255, 255, 255) text_color = (0, 0, 0)
+
+image = Image.new('RGB', (width, height), color=background_color)
+draw = ImageDraw.Draw(image)
+
+try:
+    font = ImageFont.truetype("arial.ttf", 40)
+except IOError:
+    font = ImageFont.load_default()
+
+text_width, text_height = draw.textsize(text, font=font)
+position = ((width - text_width) // 2, (height - text_height) // 2)
+draw.text(position, text, fill=text_color, font=font)
+image.save(file_path)
+
+class TwitterBot: def init(self, api_key, api_secret, access_token, access_token_secret, notifier=None, db_path='twitter_bot.db'): self.notifier = notifier try: auth = tweepy.OAuth1UserHandler(api_key, api_secret, access_token, access_token_secret) self.api = tweepy.API(auth, wait_on_rate_limit=True) self.user = self.api.verify_credentials() print(f"{self.user.screen_name} hesabıyla bağlandı.") except Exception as e: logging.error(f"API bağlantı hatası: {e}") if self.notifier: self.notifier.send_message(f"API bağlantı hatası: {e}") raise e
+
+self.conn = sqlite3.connect(db_path)
+    self.cursor = self.conn.cursor()
+    self._create_tables()
+
+def _create_tables(self):
+    self.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS followed_users (
+            username TEXT PRIMARY KEY,
+            followed_at TEXT
+        )
+    ''')
+    self.cursor.execute('''
+        CREATE TABLE IF NOT EXISTS sent_welcome_dms (
+            user_id TEXT PRIMARY KEY,
+            sent_at TEXT
+        )
+    ''')
+    self.conn.commit()
+
+def tweet_at(self, message, media_path=None):
+    try:
+        if media_path:
+            self.api.update_status_with_media(status=message, filename=media_path)
+        else:
+            self.api.update_status(message)
+        print("Tweet başarıyla atıldı.")
+    except Exception as e:
+        logging.error(f"Tweet atma hatası: {e}")
+        if self.notifier:
+            self.notifier.send_message(f"Tweet atma hatası: {e}")
+
+def post_flood(self, long_text):
+    tweets = [long_text[i:i+270] for i in range(0, len(long_text), 270)]
+    reply_id = None
+    for tweet in tweets:
+        if reply_id:
+            status = self.api.update_status(status=tweet, in_reply_to_status_id=reply_id, auto_populate_reply_metadata=True)
+        else:
+            status = self.api.update_status(status=tweet)
+        reply_id = status.id
+        time.sleep(2)
+
+def auto_gpt_tweet(self, prompt):
+    try:
+        openai.api_key = "OPENAI_API_KEY"
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        content = response.choices[0].message.content.strip()
+        self.post_flood(content)
+    except Exception as e:
+        logging.error(f"GPT tweet hatası: {e}")
+        if self.notifier:
+            self.notifier.send_message(f"GPT tweet hatası: {e}")
+
+def auto_news_tweet(self, rss_url):
+    try:
+        feed = feedparser.parse(rss_url)
+        entry = feed.entries[0]
+        title = entry.title
+        link = entry.link
+        content = f"📰 {title}\n{link}"
+        self.tweet_at(content)
+    except Exception as e:
+        logging.error(f"Haber tweet hatası: {e}")
+        if self.notifier:
+            self.notifier.send_message(f"Haber tweet hatası: {e}")
+
+def auto_interact_with_user(self, username):
+    try:
+        tweets = self.api.user_timeline(screen_name=username, count=3)
+        for tweet in tweets:
+            self.api.retweet(tweet.id)
+            self.api.create_favorite(tweet.id)
+            time.sleep(2)
+    except Exception as e:
+        logging.error(f"Etkileşim hatası: {e}")
+        if self.notifier:
+            self.notifier.send_message(f"Etkileşim hatası: {e}")
+
+def close(self):
+    self.conn.close()
+
+def run_schedule(bot): while True: schedule.run_pending() time.sleep(1)
+
+if name == "main": API_KEY = "..." API_SECRET = "..." ACCESS_TOKEN = "..." ACCESS_TOKEN_SECRET = "..." TELEGRAM_TOKEN = "..." TELEGRAM_CHAT_ID = "..." IMAGE_FOLDER = "path/to/image/folder" RSS_FEED_URL = "https://rss.cnn.com/rss/edition.rss" GPT_PROMPT = "Bugünkü dünya gündemiyle ilgili yaratıcı bir tweet yaz. Mizahi olabilir." TARGET_USER = "elonmusk"
+
+notifier = Notifier(TELEGRAM_TOKEN, TELEGRAM_CHAT_ID)
+bot = TwitterBot(API_KEY, API_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET, notifier=notifier)
+
+schedule.every().day.at("12:00").do(bot.update_random_images_from_folder, folder_path=IMAGE_FOLDER)
+schedule.every().day.at("15:00").do(bot.auto_media_tweet)
+schedule.every().day.at("17:00").do(bot.send_welcome_dm)
+schedule.every().day.at("18:00").do(lambda: bot.unfollow_users(bot.followers_not_following_back()))
+schedule.every().day.at("19:00").do(bot.auto_news_tweet, rss_url=RSS_FEED_URL)
+schedule.every().day.at("20:00").do(bot.auto_gpt_tweet, prompt=GPT_PROMPT)
+schedule.every().day.at("21:00").do(bot.auto_interact_with_user, username=TARGET_USER)
+
+scheduler_thread = threading.Thread(target=run_schedule, args=(bot,))
+scheduler_thread.daemon = True
+scheduler_thread.start()
+
+try:
+    while True:
+        time.sleep(10)
+except KeyboardInterrupt:
+    bot.close()
+    print("Program sonlandırıldı.")
+
