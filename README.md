@@ -75,3 +75,5 @@ Detaylar için LICENSE dosyasına bakabilirsiniz.
 Sorularınız ve destek için GitHub profilim üzerinden iletişime geçebilirsiniz.
 Teşekkürler! 🎉
 
+Bana Ulaşmak İçin
+Discord: Therenizm
