@@ -28,3 +28,50 @@ OpenAI GPT entegrasyonu ve çok sayıda özellik ile sosyal medya yönetimini ko
 
 ```bash
 pip install tweepy openai schedule
+
+
+
+
+
+4. 📝 config.py dosyasını oluşturup API bilgilerinizi ekleyin
+
+
+5. ▶️ Botu başlatın:
+
+
+
+python bot.py
+
+
+---
+
+📚 Kullanım
+
+🔧 config.py dosyasındaki ayarlarla botu özelleştirebilirsiniz
+
+🌐 Twitter ve OpenAI API anahtarları gereklidir
+
+📖 Daha fazla bilgi için Wiki sayfamıza göz atabilirsiniz
+
+
+---
+
+🤝 Katkıda Bulunma
+
+Projeye katkı yapmak isterseniz, pull request göndermekten çekinmeyin! 🙌
+
+---
+
+📜 Lisans
+
+MIT Lisansı altında lisanslanmıştır.
+Detaylar için LICENSE dosyasına bakabilirsiniz.
+
+
+---
+
+📬 İletişim
+
+Sorularınız ve destek için GitHub profilim üzerinden iletişime geçebilirsiniz.
+Teşekkürler! 🎉
+
